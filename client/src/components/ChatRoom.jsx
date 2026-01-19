@@ -4,6 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { Send, Paperclip, X } from 'lucide-react';
 import { API_URL } from '../config';
+import Avatar from './Avatar';
 
 export default function ChatRoom() {
     const { chatId } = useParams();
@@ -93,19 +94,19 @@ export default function ChatRoom() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[var(--bg-app)]">
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex flex-col h-full bg-[#f8f9fa] dark:bg-gray-950 relative">
+            {/* Chat Header */}
+            <div className="h-16 flex items-center px-6 bg-[var(--bg-panel)] border-b border-[var(--border)] shadow-sm z-10 sticky top-0">
+                <h2 className="font-bold text-lg">{chatId === 'global' ? 'Global Chat' : 'Chat'}</h2>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth">
                 {messages.map((msg, idx) => {
                     const isMe = msg.sender_id === user.id;
                     return (
                         <div key={idx} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                             {!isMe && (
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-white text-xs font-bold overflow-hidden shadow-sm flex-shrink-0">
-                                    {msg.avatar && msg.avatar !== 'default_avatar.png' ?
-                                        <img src={`${API_URL}/uploads/${msg.avatar}`} className="w-full h-full object-cover" /> :
-                                        msg.displayName?.[0]
-                                    }
-                                </div>
+                                <Avatar user={msg} size="sm" className="mt-1" />
                             )}
 
                             <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>

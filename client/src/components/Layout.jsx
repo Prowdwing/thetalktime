@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { LogOut, Moon, Sun, User, MessageSquare, Users, Settings, Plus, Hash } from 'lucide-react';
 import { API_URL } from '../config';
+import Avatar from './Avatar';
 
 export default function Layout() {
     const { user, logout, theme, toggleTheme } = useAuth();
@@ -46,15 +47,10 @@ export default function Layout() {
 
     return (
         <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden font-sans">
-            <aside className="w-80 flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-panel)] flex flex-col z-20 shadow-sm">
+            <aside className="w-80 flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-panel)] flex flex-col z-20 shadow-lg">
                 <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[var(--bg-app)] border border-[var(--border)] flex items-center justify-center overflow-hidden">
-                            {user?.avatar && user.avatar !== 'default_avatar.png' ?
-                                <img src={`${API_URL}/uploads/${user.avatar}`} alt="avatar" className="w-full h-full object-cover" /> :
-                                <span className="font-bold text-[var(--primary)]">{user?.displayName[0].toUpperCase()}</span>
-                            }
-                        </div>
+                        <Avatar user={user} size="md" />
                         <div className="flex flex-col">
                             <h3 className="font-bold text-sm leading-tight">{user?.displayName}</h3>
                             <p className="text-[11px] text-[var(--text-muted)]">@{user?.username}</p>
@@ -112,12 +108,7 @@ export default function Layout() {
                             {friends.map(friend => (
                                 <div key={friend.id} className="w-full p-2 rounded-xl hover:bg-[var(--bg-app)] flex items-center justify-between group transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-300 to-purple-300 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                                            {friend.avatar && friend.avatar !== 'default_avatar.png' ?
-                                                <img src={`${API_URL}/uploads/${friend.avatar}`} alt="avatar" className="w-full h-full object-cover" /> :
-                                                friend.displayName[0]
-                                            }
-                                        </div>
+                                        <Avatar user={friend} size="sm" />
                                         <span className="font-medium text-sm text-[var(--text-main)]">{friend.displayName}</span>
                                     </div>
                                     <button

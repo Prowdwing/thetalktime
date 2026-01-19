@@ -1,84 +1,91 @@
 import React, { useState, useEffect } from 'react';
 import { Search, UserPlus, Check, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import Avatar from './Avatar';
 
 export default function FriendList() {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
     const [requests, setRequests] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-
-    const token = localStorage.getItem('token');
-
-    const fetchRequests = () => {
-        fetch(`${API_URL}/api/auth/friend-requests`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.json())
-            .then(data => setRequests(data))
-            .catch(console.error);
-    };
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchRequests();
     }, []);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        if (!searchTerm) return;
-        fetch(`${API_URL}/api/auth/search?q=${searchTerm}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.json())
-            .then(data => setSearchResults(data))
-            .catch(console.error);
-    };
-
-    const sendRequest = (receiverId) => {
-        fetch(`${API_URL}/api/auth/friend-request`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ receiverId })
-        })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message || data.error);
+    const fetchRequests = async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/auth/friend-requests`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
+            const data = await res.json();
+            setRequests(data);
+        } catch (err) { console.error(err); }
     };
 
-    const respondRequest = (requestId, action) => {
-        fetch(`${API_URL}/api/auth/friend-request/respond`, {
+    const handleSearch = async (val) => {
+        setQuery(val);
+        if (val.length < 2) {
+            setResults([]);
+            return;
+        }
+        try {
+            const res = await fetch(`${API_URL}/api/auth/search?q=${val}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            setResults(data);
+        } catch (err) { console.error(err); }
+    };
+
+    const sendRequest = async (id) => {
+        await fetch(`${API_URL}/api/auth/friend-request`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ requestId, action })
-        })
-            .then(res => res.json())
-            .then(() => fetchRequests());
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ receiverId: id })
+        });
+        alert('Request sent!');
+        setQuery('');
+        setResults([]);
+    };
+
+    const respondRequest = async (id, action) => {
+        await fetch(`${API_URL}/api/auth/friend-request/respond`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ requestId: id, action })
+        });
+        fetchRequests();
     };
 
     return (
-        <div className="p-8 max-w-4xl mx-auto w-full">
-            <h2 className="text-2xl font-bold mb-6">Manage Friends</h2>
+        <div className="flex-1 p-6 overflow-y-auto w-full max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6">Friends</h2>
 
-            {/* Friend Requests */}
+            {/* Requests */}
             {requests.length > 0 && (
-                <div className="mb-8 p-4 bg-[var(--bg-panel)] rounded-xl border border-[var(--border)] shadow-sm">
-                    <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">Pending Requests</h3>
+                <div className="mb-8">
+                    <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">Requests</h3>
                     <div className="space-y-2">
                         {requests.map(req => (
-                            <div key={req.id} className="flex items-center justify-between p-3 bg-[var(--bg-app)] rounded-lg">
+                            <div key={req.id} className="bg-[var(--bg-panel)] p-3 rounded-xl border border-[var(--border)] flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                                        {req.avatar && req.avatar !== 'default_avatar.png' ?
-                                            <img src={`${API_URL}/uploads/${req.avatar}`} className="w-full h-full object-cover" /> : null}
-                                    </div>
+                                    <Avatar user={req} size="md" />
                                     <div>
-                                        <p className="font-medium">{req.displayName}</p>
+                                        <p className="font-semibold">{req.displayName}</p>
                                         <p className="text-xs text-[var(--text-muted)]">@{req.username}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => respondRequest(req.id, 'accept')} className="p-2 bg-[var(--success)] text-white rounded-full hover:opacity-90"><Check size={16} /></button>
-                                    <button onClick={() => respondRequest(req.id, 'reject')} className="p-2 bg-[var(--error)] text-white rounded-full hover:opacity-90"><X size={16} /></button>
+                                    <button onClick={() => respondRequest(req.id, 'accept')} className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20"><Check size={18} /></button>
+                                    <button onClick={() => respondRequest(req.id, 'reject')} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20"><X size={18} /></button>
                                 </div>
                             </div>
                         ))}
@@ -86,41 +93,33 @@ export default function FriendList() {
                 </div>
             )}
 
-            {/* Add Friend */}
-            <div className="bg-[var(--bg-panel)] rounded-xl border border-[var(--border)] shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Add Friend</h3>
-                <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-                    <input
-                        type="text"
-                        placeholder="Search by username..."
-                        className="input flex-1"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
-                    <button type="submit" className="btn btn-primary"><Search size={20} /></button>
-                </form>
+            {/* Search */}
+            <div className="flex items-center gap-2 bg-[var(--bg-panel)] p-3 rounded-xl border border-[var(--border)] mb-4">
+                <Search className="text-[var(--text-muted)]" />
+                <input
+                    type="text"
+                    placeholder="Search users by username..."
+                    className="bg-transparent flex-1 outline-none"
+                    value={query}
+                    onChange={e => handleSearch(e.target.value)}
+                />
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {searchResults.map(user => (
-                        <div key={user.id} className="p-4 border border-[var(--border)] rounded-xl flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                                    {user.avatar && user.avatar !== 'default_avatar.png' ?
-                                        <img src={`${API_URL}/uploads/${user.avatar}`} className="w-full h-full object-cover" /> :
-                                        <div className="flex items-center justify-center h-full w-full">{user.displayName[0]}</div>
-                                    }
-                                </div>
-                                <div>
-                                    <p className="font-medium">{user.displayName}</p>
-                                    <p className="text-xs text-[var(--text-muted)]">@{user.username}</p>
-                                </div>
+            <div className="space-y-2">
+                {results.map(u => (
+                    <div key={u.id} className="flex items-center justify-between p-3 hover:bg-[var(--panel-hover)] rounded-xl transition-colors">
+                        <div className="flex items-center gap-3">
+                            <Avatar user={u} size="md" />
+                            <div>
+                                <p className="font-semibold">{u.displayName}</p>
+                                <p className="text-xs text-[var(--text-muted)]">@{u.username}</p>
                             </div>
-                            <button onClick={() => sendRequest(user.id)} className="btn btn-secondary text-xs px-3 py-2">
-                                <UserPlus size={16} className="mr-1" /> Add
-                            </button>
                         </div>
-                    ))}
-                </div>
+                        {u.id !== user.id && (
+                            <button onClick={() => sendRequest(u.id)} className="p-2 rounded-full bg-[var(--primary)] text-white hover:opacity-90"><UserPlus size={18} /></button>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
     );

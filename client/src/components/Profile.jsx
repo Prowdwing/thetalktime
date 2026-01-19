@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Camera, User, Save, ArrowLeft } from 'lucide-react';
 import { API_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
+import Avatar from './Avatar';
 
 export default function Profile() {
     const { user, updateProfile } = useAuth();
@@ -68,17 +69,15 @@ export default function Profile() {
 
                             {/* Avatar Upload */}
                             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                <div className="w-32 h-32 rounded-full border-4 border-[var(--bg-panel)] shadow-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                    {preview ? (
+                                {preview ? (
+                                    <div className="w-32 h-32 rounded-full border-4 border-[var(--bg-panel)] shadow-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                                         <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                                    ) : (user?.avatar && user.avatar !== 'default_avatar.png' ? (
-                                        <img src={`${API_URL}/uploads/${user.avatar}`} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400">
-                                            {user?.displayName?.[0]}
-                                        </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-full border-4 border-[var(--bg-panel)] shadow-lg">
+                                        <Avatar user={user} size="2xl" />
+                                    </div>
+                                )}
                                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Camera className="text-white w-8 h-8" />
                                 </div>
