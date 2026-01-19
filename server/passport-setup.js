@@ -50,13 +50,21 @@ const findOrCreateUser = (profile, provider, done) => {
     });
 };
 
+// Construct absolute callback URL to ensure HTTPS on Render
+const getCallbackUrl = (provider) => {
+    if (process.env.RENDER_EXTERNAL_HOSTNAME) {
+        return `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/api/auth/${provider}/callback`;
+    }
+    return `/api/auth/${provider}/callback`;
+};
+
 // Strategies
 // GOOGLE
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/api/auth/google/callback",
+        callbackURL: getCallbackUrl('google'),
         proxy: true
     }, (accessToken, refreshToken, profile, done) => {
         findOrCreateUser(profile, 'google', done);
