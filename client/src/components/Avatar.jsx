@@ -40,8 +40,8 @@ export default function Avatar({ user, size = 'md', className = '' }) {
         <div
             className={`relative rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm border border-black/5 dark:border-white/10 ${sizeClasses[size] || sizeClasses.md} ${hasImage ? 'bg-gray-100' : getColor(user?.displayName)} ${className}`}
             style={{
-                minWidth: size === '2xl' ? '8rem' : size === 'xl' ? '6rem' : size === 'lg' ? '3.5rem' : size === 'md' ? '2.5rem' : size === 'sm' ? '2rem' : '1.5rem',
-                minHeight: size === '2xl' ? '8rem' : size === 'xl' ? '6rem' : size === 'lg' ? '3.5rem' : size === 'md' ? '2.5rem' : size === 'sm' ? '2rem' : '1.5rem',
+                width: size === '2xl' ? '8rem' : size === 'xl' ? '6rem' : size === 'lg' ? '3.5rem' : size === 'md' ? '2.5rem' : size === 'sm' ? '2rem' : '1.5rem',
+                height: size === '2xl' ? '8rem' : size === 'xl' ? '6rem' : size === 'lg' ? '3.5rem' : size === 'md' ? '2.5rem' : size === 'sm' ? '2rem' : '1.5rem',
             }}
         >
             {hasImage ? (
