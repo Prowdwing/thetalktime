@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../database');
 const multer = require('multer');
 const path = require('path');
+const passport = require('passport');
 
 const JWT_SECRET = 'supersecretkey_change_in_prod';
 
@@ -28,13 +29,12 @@ router.post('/register', (req, res) => {
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
+    // Check if user exists (generic check)
+    // We could add constraints but lets run insert
     const stmt = db.prepare("INSERT INTO users (username, password, displayName) VALUES (?, ?, ?)");
     stmt.run([username, hashedPassword, displayName], function (err) {
         if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-                return res.status(400).json({ error: 'Username already taken' });
-            }
-            return res.status(500).json({ error: 'Database error' });
+            return res.status(400).json({ error: 'Username already taken or invalid' });
         }
         res.status(201).json({ message: 'User created successfully' });
     });
@@ -45,11 +45,13 @@ router.post('/register', (req, res) => {
 router.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+        if (err || !user) return res.status(401).json({ error: 'Invalid credentials' });
+
+        // If OAuth user (no password)
+        if (!user.password) return res.status(401).json({ error: 'Please login with Google/Discord' });
 
         if (bcrypt.compareSync(password, user.password)) {
-            const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
+            const token = jwt.sign({ id: user.id }, JWT_SECRET);
             res.json({ token, user: { id: user.id, username: user.username, displayName: user.displayName, avatar: user.avatar } });
         } else {
             res.status(401).json({ error: 'Invalid credentials' });
@@ -57,15 +59,42 @@ router.post('/login', (req, res) => {
     });
 });
 
+// OAUTH ROUTES
+// NOTE: We need to redirect to Frontend with the token.
+// Frontend URL: Default to localhost, but allow ENV Override
+// In Vercel, this won't be localhost. It will be the Vercel URL.
+// We should pass a 'redirect' param or configure the production URL.
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+const handleOAuthCallback = (req, res) => {
+    const user = req.user;
+    if (!user) return res.redirect(`${CLIENT_URL}/auth?error=LoginFailed`);
+
+    const token = jwt.sign({ id: user.id }, JWT_SECRET);
+    // Redirect to frontend with token in query params
+    res.redirect(`${CLIENT_URL}/auth?token=${token}`);
+};
+
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/api/auth/fail' }), handleOAuthCallback);
+
+router.get('/discord', passport.authenticate('discord'));
+router.get('/discord/callback', passport.authenticate('discord', { failureRedirect: '/api/auth/fail' }), handleOAuthCallback);
+
+router.get('/fail', (req, res) => {
+    res.redirect(`${CLIENT_URL}/auth?error=LoginFailed`);
+});
+
+
 // Get Current User (Protected)
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (!token) return res.sendStatus(401);
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, userPayload) => {
         if (err) return res.sendStatus(403);
-        req.user = user;
+        req.user = userPayload; // contains { id: ... }
         next();
     });
 };
@@ -135,7 +164,7 @@ router.get('/friend-requests', authenticateToken, (req, res) => {
 
 // Respond to Friend Request
 router.post('/friend-request/respond', authenticateToken, (req, res) => {
-    const { requestId, action } = req.body; // action: 'accept' or 'reject'
+    const { requestId, action } = req.body;
 
     db.get("SELECT * FROM friend_requests WHERE id = ?", [requestId], (err, row) => {
         if (!row) return res.status(404).json({ error: "Request not found" });
@@ -144,9 +173,6 @@ router.post('/friend-request/respond', authenticateToken, (req, res) => {
         if (action === 'accept') {
             db.serialize(() => {
                 db.run("DELETE FROM friend_requests WHERE id = ?", [requestId]);
-                // Add to friends table (ensure smaller id is first or just add pair)
-                // We'll add ordered pair to avoid checking both ways in queries if we want, or just insert.
-                // Simplified: Insert {user_a: min, user_b: max}
                 const u1 = Math.min(row.sender_id, row.receiver_id);
                 const u2 = Math.max(row.sender_id, row.receiver_id);
                 db.run("INSERT INTO friends (user_a, user_b) VALUES (?, ?)", [u1, u2]);
@@ -161,8 +187,6 @@ router.post('/friend-request/respond', authenticateToken, (req, res) => {
 
 // Get Friends
 router.get('/friends', authenticateToken, (req, res) => {
-    // Select users who are friends with me
-    // I could be user_a or user_b
     const userId = req.user.id;
     const query = `
         SELECT u.id, u.username, u.displayName, u.avatar

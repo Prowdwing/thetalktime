@@ -8,7 +8,6 @@ module.exports = (io, db) => {
         });
 
         socket.on('send_message', (data) => {
-            // data: { chatId, senderId, content, attachmentUrl, attachmentType }
             const { chatId, senderId, content, attachmentUrl, attachmentType } = data;
 
             // Save to DB
@@ -30,6 +29,7 @@ module.exports = (io, db) => {
                             attachment_type: attachmentType,
                             created_at: new Date().toISOString()
                         };
+                        // Broadcast to the specific room
                         io.to(chatId).emit('receive_message', messagePayload);
                     }
                 });
@@ -38,7 +38,7 @@ module.exports = (io, db) => {
         });
 
         socket.on('start_private_chat', ({ userA, userB }) => {
-            // check if chat exists
+            // Check if private chat already exists between these two
             db.get(`
                 SELECT c.id FROM chats c
                 JOIN chat_participants cp1 ON c.id = cp1.chat_id
@@ -48,14 +48,18 @@ module.exports = (io, db) => {
                 if (row) {
                     socket.emit('private_chat_started', { chatId: row.id });
                 } else {
-                    // Create new
-                    db.run("INSERT INTO chats (type) VALUES ('private')", function (err) {
-                        const chatId = this.lastID;
-                        db.run("INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)", [chatId, userA]);
-                        db.run("INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)", [chatId, userB]);
+                    // Create new with a random string ID or let SQLite auto-increment?
+                    // Since we switched 'id' to TEXT to support 'global', we should generate IDs for private chats.
+                    // Simple random ID:
+                    const newChatId = 'chat_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
 
-                        socket.emit('private_chat_started', { chatId: chatId });
-                        // Also notify the other user if online? (Future)
+                    db.run("INSERT INTO chats (id, type) VALUES (?, 'private')", [newChatId], function (err) {
+                        if (err) { console.error(err); return; }
+
+                        db.run("INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)", [newChatId, userA]);
+                        db.run("INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)", [newChatId, userB]);
+
+                        socket.emit('private_chat_started', { chatId: newChatId });
                     });
                 }
             });

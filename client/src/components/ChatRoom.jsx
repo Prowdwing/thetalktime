@@ -15,7 +15,6 @@ export default function ChatRoom() {
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    // Scroll to bottom
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -24,9 +23,11 @@ export default function ChatRoom() {
         scrollToBottom();
     }, [messages]);
 
-    // Load history
     useEffect(() => {
-        fetch(`${API_URL}/api/chat/history/${chatId}`, {
+        // If we clicked "Global Chat" in the sidebar, the ID might be 'global'.
+        const targetRoomId = (chatId === 'global' || chatId === '1') ? 'global' : chatId;
+
+        fetch(`${API_URL}/api/chat/history/${targetRoomId}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         })
             .then(res => res.json())
@@ -34,16 +35,16 @@ export default function ChatRoom() {
             .catch(console.error);
 
         if (socket) {
-            socket.emit('join_room', chatId);
+            socket.emit('join_room', targetRoomId);
         }
     }, [chatId, socket]);
 
-    // Listen for messages
     useEffect(() => {
         if (!socket) return;
+        const targetRoomId = (chatId === 'global' || chatId === '1') ? 'global' : chatId;
 
         const handleMessage = (msg) => {
-            if (msg.chat_id == chatId) {
+            if (msg.chat_id == targetRoomId) {
                 setMessages(prev => [...prev, msg]);
             }
         };
@@ -76,8 +77,10 @@ export default function ChatRoom() {
         e.preventDefault();
         if ((!inputText.trim() && !attachment) || !socket) return;
 
+        const targetRoomId = (chatId === 'global' || chatId === '1') ? 'global' : chatId;
+
         const payload = {
-            chatId,
+            chatId: targetRoomId,
             senderId: user.id,
             content: inputText,
             attachmentUrl: attachment?.url,
@@ -90,36 +93,41 @@ export default function ChatRoom() {
     };
 
     return (
-        <div className="flex flex-col h-full relative">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex flex-col h-full bg-[var(--bg-app)]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {messages.map((msg, idx) => {
                     const isMe = msg.sender_id === user.id;
                     return (
-                        <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div key={idx} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                             {!isMe && (
-                                <div className="w-8 h-8 rounded-full bg-gray-300 mr-2 overflow-hidden flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-white text-xs font-bold overflow-hidden shadow-sm flex-shrink-0">
                                     {msg.avatar && msg.avatar !== 'default_avatar.png' ?
                                         <img src={`${API_URL}/uploads/${msg.avatar}`} className="w-full h-full object-cover" /> :
-                                        <div className="w-full h-full flex items-center justify-center text-xs">{msg.displayName?.[0]}</div>
+                                        msg.displayName?.[0]
                                     }
                                 </div>
                             )}
-                            <div className={`max-w-[70%] rounded-2xl p-3 shadow-sm ${isMe ? 'bg-[var(--primary)] text-white rounded-br-none' : 'bg-[var(--bg-panel)] border border-[var(--border)] rounded-bl-none'}`}>
-                                {!isMe && <p className="text-xs opacity-70 mb-1">{msg.displayName}</p>}
 
-                                {msg.attachment_url && (
-                                    <div className="mb-2 rounded-lg overflow-hidden">
-                                        {msg.attachment_type === 'image' && <img src={`${API_URL}/uploads/${msg.attachment_url}`} className="max-w-full h-auto" />}
-                                        {msg.attachment_type === 'video' && <video src={`${API_URL}/uploads/${msg.attachment_url}`} controls className="max-w-full h-auto" />}
-                                        {msg.attachment_type === 'audio' && <audio src={`${API_URL}/uploads/${msg.attachment_url}`} controls />}
-                                    </div>
-                                )}
+                            <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                {!isMe && <span className="text-[10px] text-[var(--text-muted)] ml-1 mb-1">{msg.displayName}</span>}
 
-                                {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
-                                <p className={`text-[10px] text-right mt-1 ${isMe ? 'text-blue-200' : 'text-[var(--text-muted)]'}`}>
+                                <div className={`px-4 py-2 rounded-2xl shadow-sm text-sm ${isMe
+                                        ? 'bg-[var(--primary)] text-white rounded-tr-sm'
+                                        : 'bg-[var(--bg-panel)] border border-[var(--border)] text-[var(--text-main)] rounded-tl-sm'
+                                    }`}>
+                                    {msg.attachment_url && (
+                                        <div className="mb-2 rounded-lg overflow-hidden mt-1">
+                                            {msg.attachment_type === 'image' && <img src={`${API_URL}/uploads/${msg.attachment_url}`} className="max-w-xs h-auto rounded-lg" />}
+                                            {msg.attachment_type === 'video' && <video src={`${API_URL}/uploads/${msg.attachment_url}`} controls className="max-w-xs h-auto rounded-lg" />}
+                                            {msg.attachment_type === 'audio' && <audio src={`${API_URL}/uploads/${msg.attachment_url}`} controls />}
+                                        </div>
+                                    )}
+
+                                    {msg.content && <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>}
+                                </div>
+                                <span className="text-[10px] text-[var(--text-muted)] mt-1 opacity-60">
                                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
+                                </span>
                             </div>
                         </div>
                     );
@@ -127,36 +135,37 @@ export default function ChatRoom() {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
             <div className="p-4 bg-[var(--bg-panel)] border-t border-[var(--border)]">
                 {attachment && (
-                    <div className="flex items-center gap-2 mb-2 bg-[var(--bg-app)] p-2 rounded-lg w-fit">
-                        <span className="text-xs font-semibold">{attachment.type}: Attachment</span>
-                        <button onClick={() => setAttachment(null)} className="text-red-500 hover:bg-red-100 rounded-full p-0.5"><X size={14} /></button>
+                    <div className="flex items-center gap-2 mb-3 bg-[var(--bg-app)] py-1 px-3 rounded-lg w-fit border border-[var(--border)]">
+                        <span className="text-xs font-medium text-[var(--text-muted)]">{attachment.type} attached</span>
+                        <button onClick={() => setAttachment(null)} className="text-[var(--text-muted)] hover:text-red-500"><X size={14} /></button>
                     </div>
                 )}
-                <form onSubmit={sendMessage} className="flex items-center gap-2">
+                <form onSubmit={sendMessage} className="flex items-center gap-2 max-w-4xl mx-auto w-full">
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,video/*,audio/*" />
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className="p-2 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+                        title="Attach file"
                     >
                         <Paperclip size={20} />
                     </button>
                     <input
                         type="text"
-                        className="flex-1 bg-[var(--bg-app)] border border-[var(--border)] rounded-full py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                        className="flex-1 bg-[var(--input-bg)] border-none rounded-full py-3 px-5 focus:outline-none focus:ring-1 focus:ring-[var(--border)] text-sm placeholder:text-[var(--text-muted)] transition-all shadow-sm"
                         placeholder="Type a message..."
                         value={inputText}
                         onChange={e => setInputText(e.target.value)}
                     />
                     <button
                         type="submit"
-                        className="p-2.5 bg-[var(--primary)] text-white rounded-full hover:bg-[var(--primary-hover)] shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+                        className={`p-3 rounded-full shadow-md transition-all ${(inputText.trim() || attachment) ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] cursor-pointer' : 'bg-[var(--bg-app)] text-[var(--text-muted)] cursor-default'
+                            }`}
                         disabled={!inputText.trim() && !attachment}
                     >
-                        <Send size={18} />
+                        <Send size={18} className={inputText.trim() || attachment ? 'ml-0.5' : ''} />
                     </button>
                 </form>
             </div>
