@@ -42,13 +42,15 @@ export default function Avatar({ user, size = 'md', className = '' }) {
             style={{
                 width: size === '2xl' ? '8rem' : size === 'xl' ? '6rem' : size === 'lg' ? '3.5rem' : size === 'md' ? '2.5rem' : size === 'sm' ? '2rem' : '1.5rem',
                 height: size === '2xl' ? '8rem' : size === 'xl' ? '6rem' : size === 'lg' ? '3.5rem' : size === 'md' ? '2.5rem' : size === 'sm' ? '2rem' : '1.5rem',
+                transform: 'translateZ(0)' // Force strict cropping
             }}
         >
             {hasImage ? (
                 <img
                     src={user.avatar.startsWith('http') || user.avatar.startsWith('blob:') ? user.avatar : `${API_URL}/uploads/${user.avatar}`}
                     alt={user.username || 'avatar'}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="w-full h-full object-cover block"
+                    style={{ maxWidth: '100%', maxHeight: '100%' }}
                     onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add(getColor(user?.displayName)); e.target.parentElement.innerText = getInitials(user?.displayName); }}
                 />
             ) : (

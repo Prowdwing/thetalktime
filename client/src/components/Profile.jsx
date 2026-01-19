@@ -69,7 +69,7 @@ export default function Profile() {
 
                             {/* Avatar Upload */}
                             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                                <div className="rounded-full border-4 border-[var(--bg-panel)] shadow-lg">
+                                <div className="rounded-full border-4 border-[var(--bg-panel)] shadow-lg" style={{ width: '128px', height: '128px' }}>
                                     <Avatar
                                         user={{ ...user, avatar: preview || user?.avatar }}
                                         size="2xl"
