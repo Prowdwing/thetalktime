@@ -48,7 +48,7 @@ export default function Avatar({ user, size = 'md', className = '' }) {
                 <img
                     src={user.avatar.startsWith('http') || user.avatar.startsWith('blob:') ? user.avatar : `${API_URL}/uploads/${user.avatar}`}
                     alt={user.username || 'avatar'}
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add(getColor(user?.displayName)); e.target.parentElement.innerText = getInitials(user?.displayName); }}
                 />
             ) : (
