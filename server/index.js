@@ -10,6 +10,7 @@ const passport = require('passport');
 require('./passport-setup'); // Load strategies
 
 const app = express();
+app.enable('trust proxy');
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
