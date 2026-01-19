@@ -25,7 +25,6 @@ export default function ChatRoom() {
     }, [messages]);
 
     useEffect(() => {
-        // If we clicked "Global Chat" in the sidebar, the ID might be 'global'.
         const targetRoomId = (chatId === 'global' || chatId === '1') ? 'global' : chatId;
 
         fetch(`${API_URL}/api/chat/history/${targetRoomId}`, {
@@ -85,7 +84,11 @@ export default function ChatRoom() {
             senderId: user.id,
             content: inputText,
             attachmentUrl: attachment?.url,
-            attachmentType: attachment?.type
+            attachmentType: attachment?.type,
+            // Optimistic UI updates needs user details immediately if we were adding them to list manually, 
+            // but since we read from socket 'receive_message', backend provides it.
+            // For self-echo, we rely on the socket broadcast or a local append if we wanted zero-latency.
+            // Current implementation waits for server echo which is fine.
         };
 
         socket.emit('send_message', payload);
@@ -94,32 +97,31 @@ export default function ChatRoom() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fa] dark:bg-gray-950 relative">
+        <div className="flex flex-col h-full bg-[var(--bg-app)] relative">
             {/* Chat Header */}
-            <div className="h-16 flex items-center px-6 bg-[var(--bg-panel)] border-b border-[var(--border)] shadow-sm z-10 sticky top-0">
-                <h2 className="font-bold text-lg">{chatId === 'global' ? 'Global Chat' : 'Chat'}</h2>
+            <div className="h-16 flex items-center px-6 bg-[var(--bg-panel)] border-b border-[var(--border)] shadow-sm z-10">
+                <h2 className="font-bold text-lg">{chatId === 'global' ? '# Global Chat' : 'Chat'}</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {messages.map((msg, idx) => {
                     const isMe = msg.sender_id === user.id;
                     return (
                         <div key={idx} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                            {!isMe && (
-                                <Avatar user={msg} size="sm" className="mt-1" />
-                            )}
+                            {/* AVATAR: Show for everyone, including ME (on right) */}
+                            <Avatar user={isMe ? user : msg} size="sm" className="mt-1 flex-shrink-0" />
 
-                            <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                            <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                 {!isMe && <span className="text-[10px] text-[var(--text-muted)] ml-1 mb-1">{msg.displayName}</span>}
 
-                                <div className={`px-4 py-2 rounded-2xl shadow-sm text-sm ${isMe
+                                <div className={`px-4 py-2 rounded-2xl text-sm ${isMe
                                         ? 'bg-[var(--primary)] text-white rounded-tr-sm'
                                         : 'bg-[var(--bg-panel)] border border-[var(--border)] text-[var(--text-main)] rounded-tl-sm'
                                     }`}>
                                     {msg.attachment_url && (
-                                        <div className="mb-2 rounded-lg overflow-hidden mt-1">
-                                            {msg.attachment_type === 'image' && <img src={`${API_URL}/uploads/${msg.attachment_url}`} className="max-w-xs h-auto rounded-lg" />}
-                                            {msg.attachment_type === 'video' && <video src={`${API_URL}/uploads/${msg.attachment_url}`} controls className="max-w-xs h-auto rounded-lg" />}
+                                        <div className="mb-2 rounded-lg overflow-hidden mt-1 bg-black/10">
+                                            {msg.attachment_type === 'image' && <img src={`${API_URL}/uploads/${msg.attachment_url}`} className="max-w-xs h-auto block" />}
+                                            {msg.attachment_type === 'video' && <video src={`${API_URL}/uploads/${msg.attachment_url}`} controls className="max-w-xs h-auto block" />}
                                             {msg.attachment_type === 'audio' && <audio src={`${API_URL}/uploads/${msg.attachment_url}`} controls />}
                                         </div>
                                     )}
@@ -136,6 +138,7 @@ export default function ChatRoom() {
                 <div ref={messagesEndRef} />
             </div>
 
+            {/* Input Footer */}
             <div className="p-4 bg-[var(--bg-panel)] border-t border-[var(--border)]">
                 {attachment && (
                     <div className="flex items-center gap-2 mb-3 bg-[var(--bg-app)] py-1 px-3 rounded-lg w-fit border border-[var(--border)]">
@@ -143,26 +146,26 @@ export default function ChatRoom() {
                         <button onClick={() => setAttachment(null)} className="text-[var(--text-muted)] hover:text-red-500"><X size={14} /></button>
                     </div>
                 )}
-                <form onSubmit={sendMessage} className="flex items-center gap-2 max-w-4xl mx-auto w-full">
+                <form onSubmit={sendMessage} className="flex items-center gap-3 w-full">
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,video/*,audio/*" />
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+                        className="p-3 text-[var(--text-muted)] hover:text-[var(--primary)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
                         title="Attach file"
                     >
                         <Paperclip size={20} />
                     </button>
                     <input
                         type="text"
-                        className="flex-1 bg-[var(--input-bg)] border-none rounded-full py-3 px-5 focus:outline-none focus:ring-1 focus:ring-[var(--border)] text-sm placeholder:text-[var(--text-muted)] transition-all shadow-sm"
+                        className="flex-1 bg-[var(--input-bg)] border-none rounded-xl py-3 px-5 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 text-sm placeholder:text-[var(--text-muted)] transition-all font-medium"
                         placeholder="Type a message..."
                         value={inputText}
                         onChange={e => setInputText(e.target.value)}
                     />
                     <button
                         type="submit"
-                        className={`p-3 rounded-full shadow-md transition-all ${(inputText.trim() || attachment) ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] cursor-pointer' : 'bg-[var(--bg-app)] text-[var(--text-muted)] cursor-default'
+                        className={`p-3 rounded-full transition-all ${(inputText.trim() || attachment) ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-lg hover:scale-105 active:scale-95' : 'bg-[var(--bg-app)] text-[var(--text-muted)] cursor-default'
                             }`}
                         disabled={!inputText.trim() && !attachment}
                     >

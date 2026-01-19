@@ -6,33 +6,43 @@
   --accent: #3b82f6;
 
   /* Light Theme Defaults */
-  --bg-app: #f1f5f9;
-  --bg-panel: #ffffff;
+  --bg-app: #ffffff;
+  --bg-panel: #f8fafc;
+  --sidebar-bg: #2563eb; /* Solid Blue */
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.7);
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  --
   --text-main: #0f172a;
   --text-muted: #64748b;
   --border: #e2e8f0;
-  --input-bg: #f8fafc;
+  --input-bg: #f1f5f9;
   
   /* Status */
   --success: #22c55e;
   --error: #ef4444;
 
   /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.2);
   
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 [data-theme="dark"] {
-  --bg-app: #0f172a;
-  --bg-panel: #1e293b;
+  --bg-app: #000000; /* True Black */
+  --bg-panel: #111111;
+  --sidebar-bg: #2563eb; /* Keep Blue Sidebar in Dark Mode too, or make it darker blue? instructions imply distinct sidebar. Let's stick to blue.*/
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.6);
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --border: #334155;
-  --input-bg: #334155;
+  --border: #333333;
+  --input-bg: #222222;
 
-  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-bg: rgba(30, 30, 30, 0.8);
   --glass-border: rgba(255, 255, 255, 0.1);
 }
 

@@ -47,35 +47,38 @@ export default function Layout() {
 
     return (
         <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden font-sans">
-            <aside className="w-80 flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-panel)] flex flex-col z-20 shadow-lg">
+            <aside
+                className="w-80 flex-shrink-0 flex flex-col z-20 shadow-lg"
+                style={{ backgroundColor: 'var(--sidebar-bg)', color: 'var(--sidebar-text)' }}
+            >
                 <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Avatar user={user} size="md" />
+                        <Avatar user={user} size="md" className="border-2 border-white/20" />
                         <div className="flex flex-col">
-                            <h3 className="font-bold text-sm leading-tight">{user?.displayName}</h3>
-                            <p className="text-[11px] text-[var(--text-muted)]">@{user?.username}</p>
+                            <h3 className="font-bold text-sm leading-tight text-white">{user?.displayName}</h3>
+                            <p className="text-[11px]" style={{ color: 'var(--sidebar-muted)' }}>@{user?.username}</p>
                         </div>
                     </div>
                     <div className="flex gap-1">
-                        <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-[var(--bg-app)] text-[var(--text-muted)] transition-colors">
+                        <button onClick={toggleTheme} className="p-2 rounded-lg transition-colors hover:bg-white/10 text-white/70 hover:text-white">
                             {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                         </button>
-                        <button onClick={() => navigate('/profile')} className="p-2 rounded-lg hover:bg-[var(--bg-app)] text-[var(--text-muted)] transition-colors">
+                        <button onClick={() => navigate('/profile')} className="p-2 rounded-lg transition-colors hover:bg-white/10 text-white/70 hover:text-white">
                             <Settings size={18} />
                         </button>
                     </div>
                 </div>
 
                 <div className="px-5 pb-2">
-                    <div className="flex p-1 bg-[var(--bg-app)] rounded-xl border border-[var(--border)]">
+                    <div className="flex p-1 rounded-xl border border-white/10 bg-black/10">
                         <button
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'chats' ? 'bg-[var(--bg-panel)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'chats' ? 'bg-white text-[var(--sidebar-bg)] shadow-sm' : 'text-white/70 hover:text-white'}`}
                             onClick={() => setActiveTab('chats')}
                         >
                             Chats
                         </button>
                         <button
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'friends' ? 'bg-[var(--bg-panel)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'friends' ? 'bg-white text-[var(--sidebar-bg)] shadow-sm' : 'text-white/70 hover:text-white'}`}
                             onClick={() => setActiveTab('friends')}
                         >
                             Friends
@@ -88,35 +91,35 @@ export default function Layout() {
                         <button
                             key={room.id}
                             onClick={() => navigate(`/chat/${room.id}`)}
-                            className="w-full text-left p-3 rounded-xl hover:bg-[var(--bg-app)] flex items-center gap-3 transition-colors group"
+                            className="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors group hover:bg-white/10"
                         >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${room.type === 'public' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' : 'bg-gray-100 text-gray-600 dark:bg-gray-800'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/10 text-white`}>
                                 {room.type === 'public' ? <Hash size={18} /> : <MessageSquare size={18} />}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm truncate text-[var(--text-main)]">{room.name || `Chat #${room.id}`}</p>
-                                <p className="text-[11px] text-[var(--text-muted)] capitalize">{room.type}</p>
+                                <p className="font-semibold text-sm truncate text-white">{room.name || `Chat #${room.id}`}</p>
+                                <p className="text-[11px] capitalize text-white/60">{room.type}</p>
                             </div>
                         </button>
                     ))}
 
                     {activeTab === 'friends' && (
                         <>
-                            <button onClick={() => navigate('/friends')} className="w-full p-2 mb-2 text-xs font-medium text-[var(--primary)] border border-dashed border-[var(--primary)]/30 rounded-xl hover:bg-[var(--primary)]/5 flex items-center justify-center gap-2 transition-colors">
+                            <button onClick={() => navigate('/friends')} className="w-full p-2 mb-2 text-xs font-medium text-white border border-dashed border-white/30 rounded-xl hover:bg-white/10 flex items-center justify-center gap-2 transition-colors">
                                 <Plus size={14} /> Add Friend
                             </button>
                             {friends.map(friend => (
-                                <div key={friend.id} className="w-full p-2 rounded-xl hover:bg-[var(--bg-app)] flex items-center justify-between group transition-colors">
+                                <div key={friend.id} className="w-full p-2 rounded-xl hover:bg-white/10 flex items-center justify-between group transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <Avatar user={friend} size="sm" />
-                                        <span className="font-medium text-sm text-[var(--text-main)]">{friend.displayName}</span>
+                                        <Avatar user={friend} size="sm" className="border border-white/10" />
+                                        <span className="font-medium text-sm text-white">{friend.displayName}</span>
                                     </div>
                                     <button
                                         onClick={() => {
                                             socket.emit('start_private_chat', { userA: user.id, userB: friend.id });
                                             setActiveTab('chats');
                                         }}
-                                        className="p-2 rounded-full hover:bg-[var(--bg-panel)] text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-all scale-90 active:scale-95"
+                                        className="p-2 rounded-full hover:bg-white/20 text-white/70 hover:text-white opacity-0 group-hover:opacity-100 transition-all scale-90 active:scale-95"
                                     >
                                         <MessageSquare size={16} />
                                     </button>
@@ -126,8 +129,8 @@ export default function Layout() {
                     )}
                 </div>
 
-                <div className="p-4 border-t border-[var(--border)]">
-                    <button onClick={logout} className="flex items-center gap-2 text-xs font-semibold text-red-500 hover:text-red-600 transition-colors w-full justify-center py-2 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg">
+                <div className="p-4 border-t border-white/10">
+                    <button onClick={logout} className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-white transition-colors w-full justify-center py-2 hover:bg-white/10 rounded-lg">
                         <LogOut size={16} /> Sign Out
                     </button>
                 </div>
