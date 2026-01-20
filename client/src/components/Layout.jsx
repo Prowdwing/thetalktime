@@ -15,7 +15,9 @@ export default function Layout() {
     const [rooms, setRooms] = useState([]);
     const [friends, setFriends] = useState([]);
     const [showGroupModal, setShowGroupModal] = useState(false);
+    const [pendingRequests, setPendingRequests] = useState(0);
 
+    // Initial Fetch
     useEffect(() => {
         if (!user) return;
 
@@ -33,10 +35,21 @@ export default function Layout() {
             .then(data => setFriends(data || []))
             .catch(console.error);
 
+        fetch(`${API_URL}/api/auth/friend-requests`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+            .then(res => res.json())
+            .then(data => setPendingRequests(data?.length || 0))
+            .catch(console.error);
+
     }, [user, activeTab]);
 
+    // Socket Events
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !user) return;
+
+        socket.emit('join_user_room', user.id);
+
         socket.on('private_chat_started', ({ chatId }) => {
             fetch(`${API_URL}/api/chat/rooms`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -44,8 +57,18 @@ export default function Layout() {
                 .then(res => res.json())
                 .then(data => setRooms(data || []));
         });
-        return () => socket.off('private_chat_started');
-    }, [socket]);
+
+        socket.on('new_friend_request', () => {
+            // Refresh requests count
+            setPendingRequests(prev => prev + 1);
+            // Optionally toast notification here
+        });
+
+        return () => {
+            socket.off('private_chat_started');
+            socket.off('new_friend_request');
+        };
+    }, [socket, user]);
 
     return (
         <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden font-sans">
@@ -93,10 +116,15 @@ export default function Layout() {
                             Chats
                         </button>
                         <button
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'friends' ? 'bg-white text-[var(--sidebar-bg)] shadow-sm' : 'text-white/70 hover:text-white'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'friends' ? 'bg-white text-[var(--sidebar-bg)] shadow-sm' : 'text-white/70 hover:text-white'} relative`}
                             onClick={() => setActiveTab('friends')}
                         >
                             Friends
+                            {pendingRequests > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white ring-2 ring-[var(--sidebar-bg)]">
+                                    {pendingRequests}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -127,8 +155,9 @@ export default function Layout() {
 
                     {activeTab === 'friends' && (
                         <>
-                            <button onClick={() => navigate('/friends')} className="w-full p-2 mb-2 text-xs font-medium text-white border border-dashed border-white/30 rounded-xl hover:bg-white/10 flex items-center justify-center gap-2 transition-colors">
-                                <Plus size={14} /> Add Friend
+                            <button onClick={() => navigate('/friends')} className="w-full p-2 mb-2 text-xs font-medium text-white border border-dashed border-white/30 rounded-xl hover:bg-white/10 flex items-center justify-center gap-2 transition-colors relative">
+                                <Plus size={14} /> See Requests & Add
+                                {pendingRequests > 0 && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
                             </button>
                             {friends.map(friend => (
                                 <div key={friend.id} className="w-full p-2 rounded-xl hover:bg-white/10 flex items-center justify-between group transition-colors">

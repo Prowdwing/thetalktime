@@ -145,6 +145,14 @@ router.post('/friend-request', authenticateToken, (req, res) => {
 
     db.run("INSERT INTO friend_requests (sender_id, receiver_id) VALUES (?, ?)", [senderId, receiverId], function (err) {
         if (err) return res.status(500).json({ error: 'Already requested or error' });
+
+        // Notify Receiver
+        if (req.io) {
+            req.io.to(`user_${receiverId}`).emit('new_friend_request', {
+                senderId: senderId,
+                displayName: req.user.displayName // Optimistic info
+            });
+        }
         res.json({ message: 'Request sent' });
     });
 });
