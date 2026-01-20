@@ -89,4 +89,30 @@ router.get('/rooms', authenticateToken, (req, res) => {
     });
 });
 
+// Create Group Chat
+router.post('/group', authenticateToken, (req, res) => {
+    const { name, participants } = req.body; // participants is array of userIds
+    if (!name || !participants || !Array.isArray(participants)) {
+        return res.status(400).json({ error: 'Invalid group data' });
+    }
+
+    const chatId = 'group_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    const creatorId = req.user.id;
+    const allUserIds = [...new Set([creatorId, ...participants])]; // Ensure unique and include creator
+
+    db.serialize(() => {
+        db.run("INSERT INTO chats (id, type, name) VALUES (?, 'group', ?)", [chatId, name], (err) => {
+            if (err) return res.status(500).json({ error: 'Failed to create group' });
+
+            const stmt = db.prepare("INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)");
+            allUserIds.forEach(uid => {
+                stmt.run(chatId, uid);
+            });
+            stmt.finalize();
+
+            res.json({ id: chatId, type: 'group', name: name, created_at: new Date() });
+        });
+    });
+});
+
 module.exports = router;
