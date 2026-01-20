@@ -66,7 +66,7 @@ export default function AuthPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] p-4">
+        <div className="h-screen w-full flex items-center justify-center bg-[var(--bg-app)] p-4 overflow-hidden relative">
             <div className="w-full max-w-sm">
                 <div className="text-center mb-10">
                     <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500 mb-2">
