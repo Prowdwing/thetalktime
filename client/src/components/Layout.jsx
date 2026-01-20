@@ -5,6 +5,7 @@ import { useSocket } from '../context/SocketContext';
 import { LogOut, Moon, Sun, User, MessageSquare, Users, Settings, Plus, Hash } from 'lucide-react';
 import { API_URL } from '../config';
 import Avatar from './Avatar';
+import CreateGroupModal from './CreateGroupModal';
 
 export default function Layout() {
     const { user, logout, theme, toggleTheme } = useAuth();
@@ -13,6 +14,7 @@ export default function Layout() {
     const [activeTab, setActiveTab] = useState('chats');
     const [rooms, setRooms] = useState([]);
     const [friends, setFriends] = useState([]);
+    const [showGroupModal, setShowGroupModal] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -47,6 +49,19 @@ export default function Layout() {
 
     return (
         <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden font-sans">
+            {showGroupModal && (
+                <CreateGroupModal
+                    onClose={() => setShowGroupModal(false)}
+                    onCreated={(newGroup) => {
+                        fetch(`${API_URL}/api/chat/rooms`, {
+                            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                        })
+                            .then(res => res.json())
+                            .then(data => setRooms(data || []));
+                        navigate(`/chat/${newGroup.id}`);
+                    }}
+                />
+            )}
             <aside
                 className="w-80 flex-shrink-0 flex flex-col z-20 shadow-lg"
                 style={{ backgroundColor: 'var(--sidebar-bg)', color: 'var(--sidebar-text)' }}
@@ -87,21 +102,28 @@ export default function Layout() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-                    {activeTab === 'chats' && rooms.map(room => (
-                        <button
-                            key={room.id}
-                            onClick={() => navigate(`/chat/${room.id}`)}
-                            className="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors group hover:bg-white/10"
-                        >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/10 text-white`}>
-                                {room.type === 'public' ? <Hash size={18} /> : <MessageSquare size={18} />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm truncate text-white">{room.name || `Chat #${room.id}`}</p>
-                                <p className="text-[11px] capitalize text-white/60">{room.type}</p>
-                            </div>
-                        </button>
-                    ))}
+                    {activeTab === 'chats' && (
+                        <>
+                            <button onClick={() => setShowGroupModal(true)} className="w-full p-2 mb-2 text-xs font-medium text-white border border-dashed border-white/30 rounded-xl hover:bg-white/10 flex items-center justify-center gap-2 transition-colors">
+                                <Users size={14} /> Create Group
+                            </button>
+                            {rooms.map(room => (
+                                <button
+                                    key={room.id}
+                                    onClick={() => navigate(`/chat/${room.id}`)}
+                                    className="w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors group hover:bg-white/10"
+                                >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/10 text-white`}>
+                                        {room.type === 'public' ? <Hash size={18} /> : room.type === 'group' ? <Users size={18} /> : <MessageSquare size={18} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-sm truncate text-white">{room.name || `Chat #${room.id}`}</p>
+                                        <p className="text-[11px] capitalize text-white/60">{room.type}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </>
+                    )}
 
                     {activeTab === 'friends' && (
                         <>
