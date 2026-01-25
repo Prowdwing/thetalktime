@@ -52,20 +52,28 @@ router.get('/history/:chatId', authenticateToken, (req, res) => {
     db.get("SELECT type FROM chats WHERE id = ?", [chatId], (err, chat) => {
         if (!chat) return res.status(404).json({ error: "Chat not found" });
 
-        // TODO: Access control for private/group chats
-        // For MVP, we assume if they have the ID and are auth'd, they can try to load.
-        // But for private chars, we should check participants.
+        const fetchMessages = () => {
+            db.all(`
+                SELECT m.id, m.content, m.attachment_url, m.attachment_type, m.created_at, m.sender_id, u.displayName, u.avatar 
+                FROM messages m
+                JOIN users u ON m.sender_id = u.id
+                WHERE m.chat_id = ?
+                ORDER BY m.created_at ASC
+            `, [chatId], (err, rows) => {
+                if (err) return res.status(500).json({ error: 'Database error' });
+                res.json(rows);
+            });
+        };
 
-        db.all(`
-            SELECT m.id, m.content, m.attachment_url, m.attachment_type, m.created_at, m.sender_id, u.displayName, u.avatar 
-            FROM messages m
-            JOIN users u ON m.sender_id = u.id
-            WHERE m.chat_id = ?
-            ORDER BY m.created_at ASC
-        `, [chatId], (err, rows) => {
-            if (err) return res.status(500).json({ error: 'Database error' });
-            res.json(rows);
-        });
+        if (chat.type === 'public') {
+            fetchMessages();
+        } else {
+            // Check participation
+            db.get("SELECT 1 FROM chat_participants WHERE chat_id = ? AND user_id = ?", [chatId, req.user.id], (err, row) => {
+                if (err || !row) return res.status(403).json({ error: "Access denied" });
+                fetchMessages();
+            });
+        }
     });
 });
 
