@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { LogOut, Moon, Sun, User, MessageSquare, Users, Settings, Plus, Hash } from 'lucide-react';
+import { LogOut, Moon, Sun, User, MessageSquare, Users, Settings, Plus, Hash, X } from 'lucide-react';
 import { API_URL } from '../config';
 import Avatar from './Avatar';
 import CreateGroupModal from './CreateGroupModal';
